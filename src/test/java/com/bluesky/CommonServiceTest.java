@@ -24,7 +24,7 @@ public class CommonServiceTest {
         params.put("psptId", "1");
         System.out.println(commonService.queryConsultRecords(params));
     }
-    @Testgi
+    @Test
     public void saveAreaTest() {
         ConsultConfigArea area = new ConsultConfigArea();
         area.setAreaName("昆明");
