@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:p="http://www.springframework.org/schema/p"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xsi:schemaLocation="
+        http://www.springframework.org/schema/beans
+        https://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context.xsd
+        http://www.springframework.org/schema/tx
+        https://www.springframework.org/schema/tx/spring-tx.xsd
+        http://www.springframework.org/schema/aop
+        https://www.springframework.org/schema/aop/spring-aop.xsd">
+
+    <!-- 引入属性文件，在配置中占位使用 -->
+    <context:property-placeholder location="classpath:database.properties"/>
+
+    <!-- C3P0数据源配置-->
+    <!-- mysql -->
+    <bean id="mysql" class="com.mchange.v2.c3p0.ComboPooledDataSource" destroy-method="close">
+        <!-- 驱动类名-->
+        <property name="driverClass" value="${mysql.driver}"/>
+        <!-- url -->
+        <property name="jdbcUrl" value="${mysql.url}"/>
+        <!-- 用户名 -->
+        <property name="user" value="${mysql.username}"/>
+        <!-- 密码 -->
+        <property name="password" value="${mysql.password}"/>
+        <!-- 连接池中连接最小个数 -->
+        <property name="minPoolSize" value="10" />
+        <!-- 连接池中连接最大个数 -->
+        <property name="maxPoolSize" value="100" />
+        <!-- 最大空闲时间 单位毫秒 -->
+        <property name="maxIdleTime" value="1800" />
+        <!-- 当连接池中的连接耗尽时一次同时获取的连接数 -->
+        <property name="acquireIncrement" value="3" />
+        <!-- JDBC的标准参数，用于控制数据源内加载的PreparedStatement数量 -->
+        <property name="maxStatements" value="1000" />
+        <!-- 初始连接池大小 -->
+        <property name="initialPoolSize" value="10"/>
+        <!-- 每60秒检查所有连接池中的空闲连接 -->
+        <property name="idleConnectionTestPeriod" value="60"/>
+        <!-- 定义在从数据库获取新连接失败后重复尝试的次数 -->
+        <property name="acquireRetryAttempts" value="30"/>
+        <!--获取连接失败将会引起所有等待连接池来获取连接的线程抛出异常。但是数据源仍有效 保留，并在下次调用getConnection()的时候继续尝试获取连接。如果设为true，那么在尝试 获取连接失败后该数据源将申明已断开并永久关闭。Default: false-->
+        <property name="breakAfterAcquireFailure" value="false"/>
+        <!--因性能消耗大请只在需要的时候使用它。如果设为true那么在每个connection提交的 时候都将校验其有效性。建议使用idleConnectionTestPeriod或automaticTestTable 等方法来提升连接测试的性能。Default: false -->
+        <property name="testConnectionOnCheckout" value="false"/>
+        <!-- 两次连接中间隔时间，单位毫秒 -->
+        <property name="acquireRetryDelay" value="100" />
+    </bean>
+    <!-- oracle -->
+    <bean id="oracle" class="com.mchange.v2.c3p0.ComboPooledDataSource" destroy-method="close">
+        <!-- 驱动类名-->
+        <property name="driverClass" value="${oracle.driver}"/>
+        <!-- url -->
+        <property name="jdbcUrl" value="${oracle.url}"/>
+        <!-- 用户名 -->
+        <property name="user" value="${oracle.username}"/>
+        <!-- 密码 -->
+        <property name="password" value="${oracle.password}"/>
+        <!-- 连接池中连接最小个数 -->
+        <property name="minPoolSize" value="10" />
+        <!-- 连接池中连接最大个数 -->
+        <property name="maxPoolSize" value="100" />
+        <!-- 最大空闲时间 单位毫秒 -->
+        <property name="maxIdleTime" value="1800" />
+        <!-- 当连接池中的连接耗尽时一次同时获取的连接数 -->
+        <property name="acquireIncrement" value="3" />
+        <!-- JDBC的标准参数，用于控制数据源内加载的PreparedStatement数量 -->
+        <property name="maxStatements" value="1000" />
+        <!-- 初始连接池大小 -->
+        <property name="initialPoolSize" value="10"/>
+        <!-- 每60秒检查所有连接池中的空闲连接 -->
+        <property name="idleConnectionTestPeriod" value="60"/>
+        <!-- 定义在从数据库获取新连接失败后重复尝试的次数 -->
+        <property name="acquireRetryAttempts" value="30"/>
+        <!--获取连接失败将会引起所有等待连接池来获取连接的线程抛出异常。但是数据源仍有效 保留，并在下次调用getConnection()的时候继续尝试获取连接。如果设为true，那么在尝试 获取连接失败后该数据源将申明已断开并永久关闭。Default: false-->
+        <property name="breakAfterAcquireFailure" value="false"/>
+        <!--因性能消耗大请只在需要的时候使用它。如果设为true那么在每个connection提交的 时候都将校验其有效性。建议使用idleConnectionTestPeriod或automaticTestTable 等方法来提升连接测试的性能。Default: false -->
+        <property name="testConnectionOnCheckout" value="false"/>
+        <!-- 两次连接中间隔时间，单位毫秒 -->
+        <property name="acquireRetryDelay" value="100" />
+    </bean>
+
+    <bean id="vendorProperties" class="org.springframework.beans.factory.config.PropertiesFactoryBean">
+        <property name="properties">
+            <props>
+                <prop key="Oracle">oracle</prop>
+                <prop key="MySQL">mysql</prop>
+            </props>
+        </property>
+    </bean>
+
+    <!-- mybatis多厂商数据库支持 -->
+    <bean id="databaseIdProvider" class="org.apache.ibatis.mapping.VendorDatabaseIdProvider">
+        <property name="properties" ref="vendorProperties"/>
+    </bean>
+
+    <!-- 会话工厂bean -->
+    <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <!-- 数据源 -->
+        <property name="dataSource" ref="${dataSource}"/>
+        <property name="databaseIdProvider" ref="databaseIdProvider"/>
+        <!-- 别名 -->
+        <property name="typeAliasesPackage" value="com.bluesky.bean"/>
+        <!-- SQL映射文件路径 -->
+        <property name="mapperLocations">
+            <value>classpath*:com/bluesky/xml/*Mapper.xml</value>
+        </property>
+    </bean>
+
+    <!-- 自动扫描对象关系映射 -->
+    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <property name="annotationClass" value="org.springframework.stereotype.Repository"/>
+        <!-- 指定要自动扫描接口的基础包，实现接口 -->
+        <property name="basePackage" value="com.bluesky.dao"/>
+        <!--这样会导致property-placeholder加载配置文件失效
+		<property name="sqlSessionFactory" ref="sqlSessionFactory"/>-->
+        <!-- 指定会话工厂 -->
+        <property name="sqlSessionFactoryBeanName" value="sqlSessionFactory"/>
+    </bean>
+
+    <!-- 声明式事务管理 -->
+    <!-- 定义事务管理器，由spring管理事务 -->
+    <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="${dataSource}"/>
+    </bean>
+    <!-- 支持注解驱动的事务管理，指定事务管理器 -->
+    <tx:annotation-driven transaction-manager="transactionManager"/>
+
+    <!-- 容器自动扫描IOC组件 -->
+    <context:component-scan base-package="com.bluesky"></context:component-scan>
+
+    <aop:aspectj-autoproxy/>
+</beans>

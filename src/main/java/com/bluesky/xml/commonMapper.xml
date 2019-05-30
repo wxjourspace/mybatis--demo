@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bluesky.dao.CommonMapper">
+    <resultMap id="AreaResultMap" type="com.bluesky.bean.ConsultConfigArea" >
+        <result column="AREACODE" property="areaCode" jdbcType="VARCHAR" />
+        <result column="AREANAME" property="areaName" jdbcType="VARCHAR"/>
+        <result column="STATE" property="state"/>
+    </resultMap>
+
+    <resultMap id="ContentResultMap" type="com.bluesky.bean.ConsultContent" >
+        <id column="ID" property="id"/>
+        <result column="ITEMINDEX" property="itemIndex"/>
+        <result column="CONTENT" property="content"/>
+        <result column="TYPE" property="type"/>
+        <result column="STATE" property="state"/>
+    </resultMap>
+
+    <resultMap id="ContractResultMap" type="com.bluesky.bean.ConsultContract" >
+        <id column="CONTRACT_ID" property="contractId"/>
+        <result column="PSPTID" property="psptId"/>
+        <result column="CONTRACT_CODE" property="contractCode"/>
+        <result column="ACTIVETIME" property="activeTime"/>
+        <result column="STATE" property="state"/>
+    </resultMap>
+
+    <resultMap id="CardInfoResultMap" type="com.bluesky.bean.ConsultIdCardInfo">
+        <id column="INNERID" property="innerId"/>
+        <result column="PSPTID" property="psptId"/>
+        <result column="NAME" property="name"/>
+        <result column="SEX" property="sex"/>
+        <result column="BIRTHDAY" property="birthday"/>
+        <result column="ADRESS" property="adress"/>
+        <result column="PICTURE" property="picture"/>
+        <result column="ACTIVETIME" property="activeTime"/>
+        <result column="NATION" property="nation"/>
+    </resultMap>
+
+    <resultMap id="RecordResultMap" type="com.bluesky.bean.ConsultRecord" >
+        <id column="ID" property="id"/>
+        <result column="PSPTID" property="psptId" jdbcType="VARCHAR" />
+        <result column="NAME" property="name" jdbcType="VARCHAR" />
+        <result column="ACTIVETIME" property="activeTime" jdbcType="TIMESTAMP" />
+        <result column="AUTOGRAPH" property="autograph" jdbcType="VARCHAR" />
+        <result column="ISPASS" property="ispass" jdbcType="VARCHAR" />
+        <result column="DOCAUTOGRAPH" property="docautograph" jdbcType="VARCHAR" />
+        <result column="FINGERPRINT" property="fingerprint" jdbcType="VARCHAR" />
+        <result column="PRINT_FLAG" property="printFlag" jdbcType="VARCHAR" />
+        <result column="HAND_STATE" property="handState" jdbcType="VARCHAR" />
+        <result column="REMARK" property="remark" jdbcType="VARCHAR" />
+    </resultMap>
+
+    <resultMap id="CountResultMap" type="com.bluesky.bean.ConsultRecordCount" >
+        <result column="PSPTID" property="psptId" jdbcType="VARCHAR" />
+        <result column="ISPRODUCE" property="isproduce"/>
+        <result column="UNPRODUCE" property="unproduce"/>
+    </resultMap>
+
+    <select id="queryConsultRecords" parameterType="java.util.Map" resultMap="RecordResultMap">
+  	    select ID,PSPTID,date_format(ACTIVETIME,'%Y-%m-%d') ACTIVETIME,date_format(ACTIVETIME,'%Y-%m-%d %T') ACTIVETIME1,
+  	    AUTOGRAPH,ISPASS,DOCAUTOGRAPH,FINGERPRINT,PRINT_FLAG,REMARK from consult_record
+  	    where PSPTID = #{psptId,jdbcType=VARCHAR} and hand_state = 'C' order by ACTIVETIME1 desc
+	</select>
+
+    <select id="queryRecords" parameterType="java.util.Map" resultMap="RecordResultMap">
+        select bb.*,(select name from consult_idcardinfo aa
+        where aa.PSPTID = bb.PSPTID) name from (
+        select ID,PSPTID,date_format(ACTIVETIME,'%Y-%m-%d') ACTIVETIME,AUTOGRAPH,ISPASS,DOCAUTOGRAPH,FINGERPRINT,PRINT_FLAG,REMARK
+        from consult_record
+        <trim prefix="WHERE" prefixOverrides="AND|OR">
+            <if test="psptId != null and psptId != ''" >
+                and PSPTID like CONCAT('%',#{psptId,jdbcType=VARCHAR},'%')
+            </if>
+            <if test="name != null and name != ''" >
+                and PSPTID in (select PSPTID from consult_idcardinfo where name like CONCAT('%',#{name,jdbcType=VARCHAR},'%'))
+            </if>
+            <if test="simple != null and simple != ''" >
+                and PSPTID in (select PSPTID from consult_idcardinfo where pinyin(name) = #{simple,jdbcType=VARCHAR})
+            </if>
+            <if test="innerId != null and innerId != ''" >
+                and PSPTID in (select PSPTID from consult_idcardinfo where innerId = #{innerId})
+            </if>
+            <if test="activeTime != null and activeTime != ''" >
+                and ACTIVETIME >= str_to_date(#{activeTime,jdbcType=VARCHAR},'%Y-%m-%d')
+            </if>
+            <if test="printFlag != null and printFlag != ''" >
+                and PRINT_FLAG = #{printFlag,jdbcType=VARCHAR}
+            </if>
+            <if test="handState != null and handState != ''" >
+                and hand_state = #{handState,jdbcType=VARCHAR}
+            </if>
+        </trim>
+        order by ACTIVETIME desc
+        <if test="beginPage != null and beginPage != '' or beginPage==0">
+            LIMIT #{beginPage}
+        </if>
+        <if test="pageSize != null and pageSize != ''" >
+            ,#{pageSize}
+        </if> ) bb
+    </select>
+
+    <insert id="saveArea" parameterType="com.bluesky.bean.ConsultConfigArea">
+        <!--<SelectKey></SelectKey>-->
+        insert into consult_configarea (AREACODE, AREANAME, STATE)
+        values (#{areaCode,jdbcType=VARCHAR}, #{areaName,jdbcType=VARCHAR},#{state,jdbcType=INTEGER})
+    </insert>
+
+    <update id="updateConsultRecord"  parameterType="java.util.Map" databaseId="mysql">
+        update consult_record
+        <set>
+            <if test="handState != null and handState != ''" >
+                hand_state = #{handState,jdbcType=VARCHAR},
+            </if>
+            <if test="ispass != null and ispass != ''" >
+                ISPASS = #{ispass,jdbcType=VARCHAR},
+            </if>
+            <if test="docautograph != null and docautograph != ''" >
+                DOCAUTOGRAPH = #{docautograph,jdbcType=VARCHAR}
+            </if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <update id="updateArea"  parameterType="com.bluesky.bean.ConsultConfigArea">
+        update consult_configarea
+        <set>
+            <if test="areaCode != null" >
+                areaCode = #{areaCode,jdbcType=VARCHAR},
+            </if>
+            <if test="areaName != null" >
+                areaName = #{areaName,jdbcType=VARCHAR},
+            </if>
+            <if test="state != null" >
+                state = #{state},
+            </if>
+        </set>
+        where areaCode = #{areaCode,jdbcType=VARCHAR}
+    </update>
+
+    <delete id="deleteArea" parameterType="java.util.ArrayList">
+        delete from consult_configarea where areaCode in
+        <foreach item="item" index="index" collection="areaCodes" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+    </delete>
+</mapper>
